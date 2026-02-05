@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <script>
+    // Preserve the full path (pathname + search + hash) and redirect to the SPA entry point
+    // The React router will handle the actual route restoration
+    const fullPath = window.location.pathname + window.location.search + window.location.hash;
+    if (fullPath !== '/' && fullPath !== '/index.html') {
+      sessionStorage.setItem('redirectPath', fullPath);
+    }
+    window.location.replace('/');
+  </script>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html>

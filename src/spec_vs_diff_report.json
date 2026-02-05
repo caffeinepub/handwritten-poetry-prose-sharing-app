@@ -1,0 +1,93 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-05T09:57:04.956Z",
+  "summary": "REQ-4 was to regenerate/refresh the preview build without changing application functionality or backend state. The diff shows substantial backend and frontend functional changes (e.g., new post visibility model and authorization gates) plus documentation/state updates, and it does not show any explicit change that updates a Preview link/button to a newly generated preview build.",
+  "missing_requirements": [
+    {
+      "id": "REQ-4",
+      "requirement": "Regenerate the project build and refresh the live preview so the user can access an updated Preview link/button in the interface without changing application functionality.",
+      "reason": "The diff contains multiple functional code changes (not a no-op rebuild), and it does not provide evidence that the Preview action/link was updated to point to a newly generated preview build.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend-file-summaries.txt",
+        "frontend/PUBLISHING.md",
+        "project_state.json"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "A new build is produced successfully with no code changes required.",
+      "reason": "Code was modified (backend logic/types and various frontend-described behaviors), contradicting the acceptance criterion that no code changes are required for the regeneration.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend-file-summaries.txt",
+        "project_state.json"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "The Preview action/link in the interface points to the newly generated preview build.",
+      "reason": "No evidence in the provided diff summary indicates any update to a Preview link/button target (e.g., config, build metadata, or UI element tied to preview).",
+      "evidence": [
+        "frontend-file-summaries.txt",
+        "frontend/PUBLISHING.md",
+        "project_state.json"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "No backend state migrations are performed as part of this regeneration.",
+      "reason": "Backend canister code changes are present, including new/changed data types and storage behavior; the diff does not show a guarantee of ‘no migrations’ and appears to alter backend state handling rather than only rebuilding.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Introduced/expanded post visibility domain model (#publicPost/#linkOnly/#privatePost) and enforced visibility-based access restrictions in backend queries.",
+      "reason": "REQ-4 requested only a rebuild/preview refresh with no functionality changes; adding/changing visibility behavior is new functionality.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend-file-summaries.txt (mentions visibility badges, private access denial handling, visibility selection in NewPostPage)"
+      ]
+    },
+    {
+      "description": "Changed public feed behavior to return only public posts and added/changed authorization checks around profile and post access.",
+      "reason": "REQ-4 explicitly disallows application functionality changes and backend/auth changes as part of the preview regeneration.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "Added/updated extensive frontend behavior and UI elements (routing handling, feed layout with featured tiles, cropping flow, zoom viewer, visibility badges, pricing route, offline notice, PWA install button).",
+      "reason": "REQ-4 is a non-feature request; these constitute new features/UI changes beyond regenerating a preview build.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "Added documentation content describing preview regeneration and deployment/PWA verification steps.",
+      "reason": "REQ-4 did not request documentation updates; this is extra scope beyond regenerating the preview build.",
+      "evidence": [
+        "frontend/PUBLISHING.md"
+      ]
+    },
+    {
+      "description": "Updated project_state.json summary/features to reflect expanded functionality (visibility, zoom/pan, cropping, offline caching, SPA deep-link support).",
+      "reason": "REQ-4 requested a rebuild without functionality change; updating project state to new capabilities suggests unrequested scope.",
+      "evidence": [
+        "project_state.json"
+      ]
+    }
+  ],
+  "confidence": 0.74,
+  "changed_files": [
+    "backend/main.mo",
+    "frontend-file-summaries.txt",
+    "frontend/PUBLISHING.md",
+    "project_state.json"
+  ]
+}

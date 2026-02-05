@@ -1,0 +1,23 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Regenerate preview build (no functional changes)",
+  "requirements": [
+    {
+      "id": "REQ-4",
+      "summary": "Trigger a fresh frontend build/preview refresh without changing application functionality or backend behavior.",
+      "acceptanceCriteria": [
+        "A new build is produced successfully with no code changes required.",
+        "The Preview action/link in the interface points to the newly generated preview build.",
+        "No backend state migrations are performed as part of this regeneration."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/PUBLISHING.md",
+          "operation": "modify",
+          "description": "Add/clarify documentation for how to regenerate a fresh preview build and what to verify (e.g., rebuild/redeploy steps and confirming the Preview link updates), without changing app code or behavior."
+        }
+      ]
+    }
+  ]
+}

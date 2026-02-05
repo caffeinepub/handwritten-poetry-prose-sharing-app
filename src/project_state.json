@@ -1,0 +1,380 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "A React (Vite) + TypeScript single-page Progressive Web App for sharing handwritten poetry and prose on the Internet Computer. Users authenticate via Internet Identity, set a simple user profile (name), and publish image-backed writing posts with type (poetry/prose) and visibility (public/link-only/private). The Motoko canister backend enforces role-based access control, stores user profiles and posts, and integrates IC blob-storage maintenance endpoints. The frontend provides a public feed, post detail view with zoom/pan, a new-post flow with client-side cropping and upload progress, PWA install UX, offline caching via a service worker, and SPA deep-link refresh support on ICP asset hosting.",
+  "existing_features": [
+    {
+      "id": "IF-1",
+      "title": "Internet Identity authentication provider",
+      "synonyms": [
+        "II login",
+        "AuthClient integration",
+        "authentication context"
+      ],
+      "description": "Provides a React context/provider that initializes Dfinity AuthClient, restores persisted identity on load, and exposes login/logout operations plus detailed login status and error state.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-2",
+      "title": "Login/logout UI with cache reset",
+      "synonyms": [
+        "LoginButton",
+        "logout clears react-query"
+      ],
+      "description": "UI button that triggers Internet Identity login/logout with loading state; on logout it clears the React Query cache to avoid stale authenticated data.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-3",
+      "title": "Backend canister actor creation per identity",
+      "synonyms": [
+        "useActor",
+        "authenticated actor",
+        "anonymous actor"
+      ],
+      "description": "Creates a backend canister actor using the current identity (or anonymous when logged out); recreates actor when identity changes and invalidates/refetches dependent React Query caches.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-4",
+      "title": "Secret token handling via URL hash + sessionStorage",
+      "synonyms": [
+        "admin token in hash",
+        "getSecretParameter",
+        "URL secret persistence"
+      ],
+      "description": "Utilities to extract sensitive parameters from the URL hash, persist them in sessionStorage, and remove them from the URL to reduce leakage via history/referrers.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-5",
+      "title": "Role-based access control (Motoko)",
+      "synonyms": [
+        "AccessControl",
+        "admin/user/guest roles",
+        "permission checks"
+      ],
+      "description": "Motoko module implementing admin/user/guest roles, one-time admin assignment via a shared secret token, admin-only role assignment, and permission checks used to gate protected backend APIs.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-6",
+      "title": "Authorization canister API (mixin)",
+      "synonyms": [
+        "MixinAuthorization",
+        "getCallerUserRole",
+        "isCallerAdmin"
+      ],
+      "description": "Exposes canister methods to initialize access control with a secret, query the caller role, assign roles (admin-only enforced inside module), and check admin status.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-7",
+      "title": "User profiles (backend storage + frontend onboarding modal)",
+      "synonyms": [
+        "ProfileSetupModal",
+        "display name"
+      ],
+      "description": "Backend stores a per-principal profile containing a name; frontend prompts authenticated users without a profile to set their name via a modal dialog.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-8",
+      "title": "Posts domain model with writing type and visibility",
+      "synonyms": [
+        "WritingPost",
+        "poetry/prose",
+        "public/link-only/private"
+      ],
+      "description": "Defines writing posts containing an id, title, optional message, an image ExternalBlob, writing type, author principal, and visibility; backend enforces visibility rules for private posts.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-9",
+      "title": "Post creation API (backend)",
+      "synonyms": [
+        "createPost",
+        "publish post"
+      ],
+      "description": "Authenticated users can create new posts; backend validates title, prevents duplicate IDs, records author principal, stores image blob, and saves visibility/type attributes.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-10",
+      "title": "Public feed API (backend)",
+      "synonyms": [
+        "getAllPosts",
+        "public posts listing"
+      ],
+      "description": "Backend query for retrieving all public posts only (visibility == publicPost).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-11",
+      "title": "Post retrieval with privacy enforcement (backend)",
+      "synonyms": [
+        "getPost",
+        "private post access control"
+      ],
+      "description": "Backend query to retrieve a post by id; denies access to private posts unless the caller is the author or an admin.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-12",
+      "title": "Posts by type API (backend)",
+      "synonyms": [
+        "getPostsByType",
+        "filter poetry/prose"
+      ],
+      "description": "Backend query to filter posts by writing type, returning only public posts for the requested type.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-13",
+      "title": "React Query data hooks for posts and profiles",
+      "synonyms": [
+        "useQueries",
+        "query hooks",
+        "mutation hooks"
+      ],
+      "description": "Provides React Query hooks for fetching all posts, fetching a post by id, fetching posts by type, creating posts (with cache invalidation), and getting/saving the caller profile.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-14",
+      "title": "Feed page (public gallery browsing)",
+      "synonyms": [
+        "FeedPage",
+        "post grid"
+      ],
+      "description": "Home page that loads public posts and displays them in a responsive gallery layout with featured tiles, plus loading and empty states and navigation to the new post flow.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-15",
+      "title": "Post cards with manuscript-style presentation",
+      "synonyms": [
+        "PostCard",
+        "gallery tile"
+      ],
+      "description": "Displays a post preview including image thumbnail in a manuscript-style frame, writing-type badge, optional visibility badge for the author, title/message excerpt, and author/date metadata.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-16",
+      "title": "Post detail page with zoomable image and error states",
+      "synonyms": [
+        "PostDetailPage",
+        "access denied UI",
+        "zoom modal"
+      ],
+      "description": "Displays a single post with metadata, type/visibility badges (visibility shown to author), click-to-zoom manuscript image, and user-friendly handling for not-found and private access-denied errors.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-17",
+      "title": "New post page with validation, visibility selection, and upload progress",
+      "synonyms": [
+        "NewPostPage",
+        "compose",
+        "publish flow"
+      ],
+      "description": "Authenticated-only post creation UI with form validation, writing type and visibility selection, image selection and preview, upload progress bar, and submission calling the backend createPost API.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-18",
+      "title": "Client-side image cropping workflow",
+      "synonyms": [
+        "ImageCropper",
+        "crop before upload"
+      ],
+      "description": "Interactive cropper that overlays a draggable crop area on the selected image, supports reset/apply/cancel, and exports the cropped region via canvas to a Blob used for publishing.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-19",
+      "title": "Image zoom and pan viewer",
+      "synonyms": [
+        "ImageZoomViewer",
+        "zoom dialog"
+      ],
+      "description": "Full-screen dialog for viewing a post image with zoom in/out, reset, mouse wheel zoom, and drag-to-pan behavior when zoomed in.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-20",
+      "title": "ExternalBlob conversion utility with progress callbacks",
+      "synonyms": [
+        "convertImageToBlob",
+        "upload blob conversion"
+      ],
+      "description": "Converts a File/Blob into an ExternalBlob from bytes using FileReader; can attach an upload progress callback used by the post creation UI.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-21",
+      "title": "Writing type and visibility badges",
+      "synonyms": [
+        "WritingTypeBadge",
+        "PostVisibilityBadge"
+      ],
+      "description": "UI badges for poetry vs prose and for private/link-only visibility (public posts omit the visibility badge).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-22",
+      "title": "Author/date presentation helpers",
+      "synonyms": [
+        "formatAuthor",
+        "relative date from id"
+      ],
+      "description": "Frontend helpers to display shortened principal identifiers and to derive a human-readable relative timestamp from the post id (timestamp-prefix convention).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-23",
+      "title": "SPA routing with deep-link refresh support on ICP asset hosting",
+      "synonyms": [
+        "TanStack Router",
+        "404.html redirect",
+        ".ic-assets.json5"
+      ],
+      "description": "Defines SPA routes for feed, post detail, new post, and pricing; supports direct navigation/refresh on non-root routes via a 404 redirect shim that stores the original path in sessionStorage and restores it on app load, with ICP asset canister configuration for routing/caching.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-24",
+      "title": "PWA manifest and offline-capable service worker",
+      "synonyms": [
+        "web manifest",
+        "service worker caching",
+        "offline shell"
+      ],
+      "description": "Provides a web manifest (standalone display, icons, theme colors) and a custom service worker that precaches core assets, performs runtime caching, and falls back to cached index.html (or an inline offline HTML) for navigation when offline.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-25",
+      "title": "Offline notice banner",
+      "synonyms": [
+        "OfflineNotice",
+        "network status UI"
+      ],
+      "description": "Displays an in-app alert when the browser is offline by listening to online/offline events and tracking navigator.onLine.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-26",
+      "title": "In-app PWA install button with fallback instructions",
+      "synonyms": [
+        "InstallAppButton",
+        "beforeinstallprompt handling"
+      ],
+      "description": "Shows an Install App button when the app is not already installed; uses beforeinstallprompt when available, otherwise presents platform-specific manual installation instructions in a dialog.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "IF-27",
+      "title": "Pricing page UI",
+      "synonyms": [
+        "PricingPage",
+        "plans screen"
+      ],
+      "description": "Static pricing page presenting Monthly (₹100) and Yearly (₹1,100) plans with feature lists and subscribe CTA buttons.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-28",
+      "title": "Blob-storage maintenance and cycle refill endpoints (backend)",
+      "synonyms": [
+        "MixinStorage",
+        "dead blob pruning",
+        "cashier refill"
+      ],
+      "description": "Backend exposes maintenance methods to update authorized gateway principals, list dead blobs for deletion, confirm blob pruning (and trigger GC), check whether a storage blob is live, and allow the cashier canister to refill cycles.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-29",
+      "title": "Publishing and PWA installation documentation",
+      "synonyms": [
+        "PUBLISHING.md",
+        "deployment guide"
+      ],
+      "description": "Documentation describing Internet Computer deployment steps, ICP asset canister SPA routing considerations, PWA installation instructions by platform, offline behavior, and troubleshooting.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "feature-regenerate-the-project-build-and-refresh-the-live-preview-so-the-user-can-access-an-updated-preview-link-button-in-the-interface-without-changing-application-functionality",
+      "title": "Regenerate the project build and refresh the live preview so the user can access an updated Preview link/button in the interface without changing application functionality.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [],
+  "architectural_notes": [
+    "Internet Computer backend canister written in Motoko; cross-cutting backend capabilities are composed via mixins (authorization and blob-storage maintenance).",
+    "Role-based access control is stateful in-canister (Principal -> role map) and initialized via a caller-provided secret compared against an environment variable token.",
+    "Frontend is a SPA using TanStack Router for routing and TanStack React Query for data fetching, caching, and mutation workflows.",
+    "Authentication is implemented with @dfinity/auth-client (Internet Identity) wrapped in a React context/provider; identity changes recreate the backend actor.",
+    "Client-to-canister media upload uses an ExternalBlob abstraction created from bytes in the browser and passed to Motoko APIs.",
+    "PWA support is implemented with a web manifest, a custom service worker (precache + runtime cache), and UI affordances (offline notice, install button + instructions).",
+    "ICP asset canister SPA deep-link support is implemented via a 404.html redirect shim plus a .ic-assets.json5 configuration for caching/content-type rules and raw access.",
+    "UI layer uses Tailwind CSS with shadcn/ui component primitives and next-themes for light/dark mode styling."
+  ],
+  "known_issues": [
+    "Post ordering is not truly chronological: the backend sorts getAllPosts() by title, while the feed reverses the array expecting newest-first, resulting in reverse-alphabetical order instead of by creation time.",
+    "getPostsByType() does not sort results, so ordering may be unstable and inconsistent with the feed.",
+    "Link-only posts rely on security-by-obscurity of the post ID; there is no additional token/nonce-based access control beyond knowing the URL.",
+    "Access control initialization traps if the canister env var CAFFEINE_ADMIN_TOKEN is not set, which can break authenticated flows in misconfigured deployments.",
+    "Blob-storage cashier principal env var appears misspelled as CAFFFEINE_STORAGE_CASHIER_PRINCIPAL (triple 'F'); deployments using a different spelling will trap at runtime.",
+    "Service worker precache does not include the built JS/CSS bundles; a first-time offline load may fail unless those assets were previously fetched and cached at runtime.",
+    "Service worker registration checks for updates every minute, which may be unnecessarily aggressive for bandwidth/battery.",
+    "Backend state (profiles, posts, roles) is stored in in-memory Maps with no stable-memory upgrade strategy shown; data may be lost across canister upgrades.",
+    "There are two different global CSS files (frontend/index.css and frontend/src/index.css); if both are used or confused in tooling, theme tokens/styles can diverge unexpectedly.",
+    "Pricing page contains subscribe CTAs but no actual subscription/payment/entitlement enforcement is implemented in the provided code."
+  ],
+  "isFixRequest": false,
+  "gameProjectType": "none",
+  "projectName": "Handwritten Poetry & Prose",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

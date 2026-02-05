@@ -1,0 +1,38 @@
+[
+  {
+    "match": "**/*",
+    "headers": {
+      "Cache-Control": "public, max-age=31536000, immutable"
+    }
+  },
+  {
+    "match": "index.html",
+    "headers": {
+      "Cache-Control": "public, max-age=0, must-revalidate"
+    }
+  },
+  {
+    "match": "manifest.webmanifest",
+    "headers": {
+      "Cache-Control": "public, max-age=0, must-revalidate",
+      "Content-Type": "application/manifest+json"
+    }
+  },
+  {
+    "match": "sw.js",
+    "headers": {
+      "Cache-Control": "public, max-age=0, must-revalidate",
+      "Content-Type": "application/javascript"
+    }
+  },
+  {
+    "match": "404.html",
+    "headers": {
+      "Cache-Control": "public, max-age=0, must-revalidate"
+    }
+  },
+  {
+    "match": "**/*",
+    "allow_raw_access": true
+  }
+]

@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.5rem;
+        --background: 0.98 0.01 40;
+        --foreground: 0.2 0.02 40;
+        --card: 1 0 0;
+        --card-foreground: 0.2 0.02 40;
+        --popover: 1 0 0;
+        --popover-foreground: 0.2 0.02 40;
+        --primary: 0.45 0.08 280;
+        --primary-foreground: 0.98 0.01 40;
+        --secondary: 0.92 0.02 60;
+        --secondary-foreground: 0.3 0.03 40;
+        --muted: 0.94 0.01 40;
+        --muted-foreground: 0.5 0.02 40;
+        --accent: 0.88 0.03 50;
+        --accent-foreground: 0.3 0.03 40;
+        --destructive: 0.55 0.22 25;
+        --destructive-foreground: 0.98 0.01 40;
+        --border: 0.88 0.01 40;
+        --input: 0.88 0.01 40;
+        --ring: 0.45 0.08 280;
+        --chart-1: 0.6 0.15 280;
+        --chart-2: 0.65 0.12 200;
+        --chart-3: 0.55 0.18 340;
+        --chart-4: 0.7 0.1 160;
+        --chart-5: 0.5 0.2 30;
+    }
+
+    .dark {
+        --background: 0.15 0.02 280;
+        --foreground: 0.95 0.01 40;
+        --card: 0.2 0.02 280;
+        --card-foreground: 0.95 0.01 40;
+        --popover: 0.18 0.02 280;
+        --popover-foreground: 0.95 0.01 40;
+        --primary: 0.7 0.12 280;
+        --primary-foreground: 0.15 0.02 280;
+        --secondary: 0.25 0.03 280;
+        --secondary-foreground: 0.95 0.01 40;
+        --muted: 0.25 0.02 280;
+        --muted-foreground: 0.6 0.02 40;
+        --accent: 0.35 0.04 280;
+        --accent-foreground: 0.95 0.01 40;
+        --destructive: 0.6 0.2 25;
+        --destructive-foreground: 0.15 0.02 280;
+        --border: 0.3 0.02 280;
+        --input: 0.3 0.02 280;
+        --ring: 0.7 0.12 280;
+        --chart-1: 0.65 0.15 280;
+        --chart-2: 0.7 0.12 200;
+        --chart-3: 0.6 0.18 340;
+        --chart-4: 0.75 0.1 160;
+        --chart-5: 0.55 0.2 30;
+    }
+
+    * {
+        @apply border-border;
+    }
+    
+    body {
+        @apply bg-background text-foreground;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+            'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Crimson Text', 'Georgia', 'Times New Roman', serif;
+    }
+}
+
+@layer utilities {
+    .paper-texture {
+        position: relative;
+    }
+
+    .paper-texture::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url('/assets/generated/paper-texture.dim_1600x1000.png');
+        background-repeat: repeat;
+        background-size: 800px 500px;
+        opacity: 0.15;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    .dark .paper-texture::before {
+        opacity: 0.05;
+    }
+
+    /* Manuscript-style image framing */
+    .manuscript-frame {
+        position: relative;
+        padding: 1.5rem;
+        background: oklch(var(--card));
+        border: 1px solid oklch(var(--border) / 0.3);
+        box-shadow: 0 2px 8px -2px oklch(0.2 0.02 280 / 0.08),
+                    0 4px 16px -4px oklch(0.2 0.02 280 / 0.06);
+        border-radius: 2px;
+    }
+
+    .dark .manuscript-frame {
+        box-shadow: 0 2px 8px -2px oklch(0.1 0.02 280 / 0.2),
+                    0 4px 16px -4px oklch(0.1 0.02 280 / 0.15);
+    }
+
+    .manuscript-frame img {
+        display: block;
+        width: 100%;
+        height: auto;
+        image-rendering: crisp-edges;
+        image-rendering: -webkit-optimize-contrast;
+    }
+
+    /* Smaller manuscript frame for cards */
+    .manuscript-frame-sm {
+        padding: 0.75rem;
+    }
+
+    /* Gallery layout helpers */
+    .gallery-featured {
+        grid-column: span 2;
+        grid-row: span 2;
+    }
+
+    @media (max-width: 768px) {
+        .gallery-featured {
+            grid-column: span 1;
+            grid-row: span 1;
+        }
+    }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "Handwritten Poetry & Prose",
+  "short_name": "Poetry & Prose",
+  "description": "Share your handwritten poetry and prose with the world",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f1e8",
+  "theme_color": "#f5f1e8",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/generated/pwa-icon.dim_192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/generated/pwa-icon.dim_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/generated/pwa-icon-maskable.dim_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["lifestyle", "social", "entertainment"],
+  "screenshots": []
+}
