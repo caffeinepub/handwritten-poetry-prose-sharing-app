@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "A React (Vite) + TypeScript single-page Progressive Web App for sharing handwritten poetry and prose on the Internet Computer. Users authenticate via Internet Identity, set a simple user profile (name), and publish image-backed writing posts with type (poetry/prose) and visibility (public/link-only/private). The Motoko canister backend enforces role-based access control, stores user profiles and posts, and integrates IC blob-storage maintenance endpoints. The frontend provides a public feed, post detail view with zoom/pan, a new-post flow with client-side cropping and upload progress, PWA install UX, offline caching via a service worker, and SPA deep-link refresh support on ICP asset hosting.",
+  "summary": "Handwritten Poetry & Prose is a React (Vite) + TypeScript single-page progressive web app (PWA) deployed on the Internet Computer. It lets users authenticate via Internet Identity, set a simple user profile, and publish handwritten writing as image-backed posts (poetry or prose) with visibility controls (public, link-only, private). A Motoko canister backend stores profiles and posts, enforces role-based access control (admin/user/guest) and private-post access rules, and provides blob-storage maintenance/cycle-refill endpoints. The project also includes a Stripe Checkout-based payment/subscription flow (via IC HTTP outcalls), plus a Pricing page that can initiate Checkout and handle success/cancel return states. The frontend supports a public feed, post detail view with zoom/pan, a post creation workflow with client-side cropping and upload progress wiring, PWA install/offline UX, route-aware SEO updates, and ICP-friendly deep-link refresh support using a 404 redirect shim and asset-canister header rules.",
   "existing_features": [
     {
       "id": "IF-1",
@@ -11,54 +11,56 @@
         "AuthClient integration",
         "authentication context"
       ],
-      "description": "Provides a React context/provider that initializes Dfinity AuthClient, restores persisted identity on load, and exposes login/logout operations plus detailed login status and error state.",
+      "description": "Provides an `InternetIdentityProvider` and `useInternetIdentity` hook to initialize/manage `@dfinity/auth-client`, restore identities on load, and expose login/logout with status and error state.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-2",
-      "title": "Login/logout UI with cache reset",
+      "title": "Login/logout UI with React Query cache clearing",
       "synonyms": [
         "LoginButton",
-        "logout clears react-query"
+        "logout clears cache"
       ],
-      "description": "UI button that triggers Internet Identity login/logout with loading state; on logout it clears the React Query cache to avoid stale authenticated data.",
+      "description": "Login/logout button that triggers Internet Identity login with loading states and clears the React Query cache on logout to avoid stale identity-scoped data.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-3",
-      "title": "Backend canister actor creation per identity",
+      "title": "Identity-scoped backend actor creation and initialization",
       "synonyms": [
         "useActor",
         "authenticated actor",
-        "anonymous actor"
+        "anonymous actor",
+        "access-control bootstrap"
       ],
-      "description": "Creates a backend canister actor using the current identity (or anonymous when logged out); recreates actor when identity changes and invalidates/refetches dependent React Query caches.",
+      "description": "Creates a canister actor bound to the current identity (or anonymous when logged out). For authenticated users, calls `_initializeAccessControlWithSecret` using a secret token from the URL hash/session, then invalidates/refetches dependent queries when the actor changes.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-4",
-      "title": "Secret token handling via URL hash + sessionStorage",
+      "title": "URL/query/hash parameter utilities with session persistence and secret scrubbing",
       "synonyms": [
-        "admin token in hash",
-        "getSecretParameter",
-        "URL secret persistence"
+        "urlParams",
+        "getUrlParameter",
+        "getPersistedUrlParameter",
+        "getSecretParameter"
       ],
-      "description": "Utilities to extract sensitive parameters from the URL hash, persist them in sessionStorage, and remove them from the URL to reduce leakage via history/referrers.",
+      "description": "Utilities to read parameters from query strings and hash fragments, persist them in `sessionStorage`, and securely extract/clear sensitive hash secrets from the address bar to reduce leakage via history/referrers.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-5",
-      "title": "Role-based access control (Motoko)",
+      "title": "Role-based access control core (Motoko)",
       "synonyms": [
         "AccessControl",
         "admin/user/guest roles",
         "permission checks"
       ],
-      "description": "Motoko module implementing admin/user/guest roles, one-time admin assignment via a shared secret token, admin-only role assignment, and permission checks used to gate protected backend APIs.",
+      "description": "Motoko module implementing admin/user/guest roles, one-time admin assignment during initialization, admin-only role assignment, and role-based permission checks used by the canister APIs.",
       "reqIds": [],
       "version": 1
     },
@@ -68,311 +70,418 @@
       "synonyms": [
         "MixinAuthorization",
         "getCallerUserRole",
-        "isCallerAdmin"
+        "isCallerAdmin",
+        "assignCallerUserRole"
       ],
-      "description": "Exposes canister methods to initialize access control with a secret, query the caller role, assign roles (admin-only enforced inside module), and check admin status.",
+      "description": "Exposes canister methods to initialize access control using an environment token, query caller role, assign roles (admin-only), and check admin status.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-7",
-      "title": "User profiles (backend storage + frontend onboarding modal)",
+      "title": "User profile storage APIs",
       "synonyms": [
-        "ProfileSetupModal",
-        "display name"
+        "UserProfile",
+        "saveCallerUserProfile",
+        "getCallerUserProfile",
+        "getUserProfile"
       ],
-      "description": "Backend stores a per-principal profile containing a name; frontend prompts authenticated users without a profile to set their name via a modal dialog.",
+      "description": "Backend stores a per-principal profile (currently `name`) with query/mutation methods for the caller, plus a guarded getter for viewing an arbitrary principal’s profile (self or admin).",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-8",
-      "title": "Posts domain model with writing type and visibility",
+      "title": "Profile onboarding modal",
       "synonyms": [
-        "WritingPost",
-        "poetry/prose",
-        "public/link-only/private"
+        "ProfileSetupModal",
+        "name prompt"
       ],
-      "description": "Defines writing posts containing an id, title, optional message, an image ExternalBlob, writing type, author principal, and visibility; backend enforces visibility rules for private posts.",
+      "description": "Frontend modal that prompts authenticated users with no profile to enter a display name, blocks outside interaction until submitted, saves via mutation, and shows toast feedback.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-9",
-      "title": "Post creation API (backend)",
+      "title": "Writing post domain model (type + visibility + image)",
       "synonyms": [
-        "createPost",
-        "publish post"
+        "WritingPost",
+        "poetry/prose",
+        "public/link-only/private",
+        "ExternalBlob image"
       ],
-      "description": "Authenticated users can create new posts; backend validates title, prevents duplicate IDs, records author principal, stores image blob, and saves visibility/type attributes.",
+      "description": "Defines posts containing id, title, optional message, `ExternalBlob` image, writing type (poetry/prose), author principal, and visibility (public/link-only/private).",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-10",
-      "title": "Public feed API (backend)",
+      "title": "Create post API with validation (backend)",
       "synonyms": [
-        "getAllPosts",
-        "public posts listing"
+        "createPost",
+        "publish post"
       ],
-      "description": "Backend query for retrieving all public posts only (visibility == publicPost).",
+      "description": "Authenticated users can create posts; backend validates non-empty title, prevents duplicate ids, records caller as author, and persists writing type, visibility, and image blob.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-11",
-      "title": "Post retrieval with privacy enforcement (backend)",
+      "title": "Public posts listing API (backend)",
       "synonyms": [
-        "getPost",
-        "private post access control"
+        "getAllPosts",
+        "public feed"
       ],
-      "description": "Backend query to retrieve a post by id; denies access to private posts unless the caller is the author or an admin.",
+      "description": "Query endpoint returning only public posts for unauthenticated browsing.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-12",
-      "title": "Posts by type API (backend)",
+      "title": "Post retrieval with visibility enforcement (backend)",
       "synonyms": [
-        "getPostsByType",
-        "filter poetry/prose"
+        "getPost",
+        "private post access control"
       ],
-      "description": "Backend query to filter posts by writing type, returning only public posts for the requested type.",
+      "description": "Query endpoint to retrieve a post by id; denies access to private posts unless caller is the author or an admin.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-13",
-      "title": "React Query data hooks for posts and profiles",
+      "title": "Filter public posts by writing type (backend)",
       "synonyms": [
-        "useQueries",
-        "query hooks",
-        "mutation hooks"
+        "getPostsByType",
+        "type filtering"
       ],
-      "description": "Provides React Query hooks for fetching all posts, fetching a post by id, fetching posts by type, creating posts (with cache invalidation), and getting/saving the caller profile.",
+      "description": "Query endpoint filtering by writing type and returning only public posts of that type.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-14",
-      "title": "Feed page (public gallery browsing)",
+      "title": "Blob-storage maintenance and cycle refill endpoints (backend mixin)",
       "synonyms": [
-        "FeedPage",
-        "post grid"
+        "_caffeineStorageUpdateGatewayPrincipals",
+        "dead blob pruning",
+        "cashier refill",
+        "certificates"
       ],
-      "description": "Home page that loads public posts and displays them in a responsive gallery layout with featured tiles, plus loading and empty states and navigation to the new post flow.",
+      "description": "Provides endpoints for updating authorized gateway principals, listing dead blobs for deletion, confirming deletions (and triggering GC), checking whether a storage blob is live, creating upload certificates, and allowing a designated cashier principal to top up cycles.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-15",
-      "title": "Post cards with manuscript-style presentation",
+      "title": "HTTP outcalls helper for external API requests (Motoko)",
       "synonyms": [
-        "PostCard",
-        "gallery tile"
+        "IC http_request wrapper",
+        "transform function",
+        "httpGetRequest",
+        "httpPostRequest"
       ],
-      "description": "Displays a post preview including image thumbnail in a manuscript-style frame, writing-type badge, optional visibility badge for the author, title/message excerpt, and author/date metadata.",
+      "description": "Utility module wrapping IC management-canister `http_request` for GET/POST, with a transform function that strips headers and fixed cycles budgeting for outcalls.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-16",
-      "title": "Post detail page with zoomable image and error states",
+      "title": "Stripe API wrapper (Motoko)",
       "synonyms": [
-        "PostDetailPage",
-        "access denied UI",
-        "zoom modal"
+        "stripe.mo",
+        "createCheckoutSession",
+        "getSessionStatus"
       ],
-      "description": "Displays a single post with metadata, type/visibility badges (visibility shown to author), click-to-zoom manuscript image, and user-friendly handling for not-found and private access-denied errors.",
+      "description": "Builds URL-encoded Stripe Checkout Session requests, calls Stripe over HTTPS outcalls, and returns session creation responses and session status results (including extracting `client_reference_id`).",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-17",
-      "title": "New post page with validation, visibility selection, and upload progress",
+      "title": "Stripe configuration management (backend)",
       "synonyms": [
-        "NewPostPage",
-        "compose",
-        "publish flow"
+        "setStripeConfiguration",
+        "isStripeConfigured"
       ],
-      "description": "Authenticated-only post creation UI with form validation, writing type and visibility selection, image selection and preview, upload progress bar, and submission calling the backend createPost API.",
+      "description": "Admin-only endpoint to set Stripe configuration (secret key + allowed countries) and a query endpoint to check whether Stripe has been configured.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-18",
-      "title": "Client-side image cropping workflow",
+      "title": "Checkout session status verification endpoint (backend)",
       "synonyms": [
-        "ImageCropper",
-        "crop before upload"
+        "getStripeSessionStatus",
+        "session ownership check"
       ],
-      "description": "Interactive cropper that overlays a draggable crop area on the selected image, supports reset/apply/cancel, and exports the cropped region via canvas to a Blob used for publishing.",
+      "description": "Backend endpoint to query Stripe for a session’s status with an authorization check that only the session creator (or an admin) may verify the session.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-19",
-      "title": "Image zoom and pan viewer",
+      "title": "Subscription status endpoint (backend)",
       "synonyms": [
-        "ImageZoomViewer",
-        "zoom dialog"
+        "isUserSubscribed"
       ],
-      "description": "Full-screen dialog for viewing a post image with zoom in/out, reset, mouse wheel zoom, and drag-to-pan behavior when zoomed in.",
+      "description": "Backend query returning whether the caller is considered subscribed (currently implemented as whether the caller has the `#user` role).",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-20",
-      "title": "ExternalBlob conversion utility with progress callbacks",
+      "title": "React Query hooks for posts, profiles, and subscriptions",
       "synonyms": [
-        "convertImageToBlob",
-        "upload blob conversion"
+        "useQueries",
+        "query hooks",
+        "mutation hooks"
       ],
-      "description": "Converts a File/Blob into an ExternalBlob from bytes using FileReader; can attach an upload progress callback used by the post creation UI.",
+      "description": "Hooks for fetching posts (all, by id, by type), creating posts (with cache invalidation), getting/saving the caller profile, and Stripe subscription actions (checkout session creation, session verification, subscription status fetch).",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-21",
-      "title": "Writing type and visibility badges",
+      "title": "Feed page (public gallery)",
       "synonyms": [
-        "WritingTypeBadge",
-        "PostVisibilityBadge"
+        "FeedPage",
+        "post grid"
       ],
-      "description": "UI badges for poetry vs prose and for private/link-only visibility (public posts omit the visibility badge).",
+      "description": "Home page that loads public posts and displays them in a responsive grid with featured tiles, plus loading/empty states and navigation to the new-post flow.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-22",
-      "title": "Author/date presentation helpers",
+      "title": "Post card UI with manuscript styling",
       "synonyms": [
-        "formatAuthor",
-        "relative date from id"
+        "PostCard",
+        "gallery tile"
       ],
-      "description": "Frontend helpers to display shortened principal identifiers and to derive a human-readable relative timestamp from the post id (timestamp-prefix convention).",
+      "description": "Displays a framed image thumbnail, writing-type badge, author-only visibility badge, title/message excerpt, and author/date metadata; supports featured sizing in the feed grid.",
       "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-23",
-      "title": "SPA routing with deep-link refresh support on ICP asset hosting",
+      "title": "Post detail page with error states and zoom entry",
       "synonyms": [
-        "TanStack Router",
-        "404.html redirect",
-        ".ic-assets.json5"
+        "PostDetailPage",
+        "access denied UI"
       ],
-      "description": "Defines SPA routes for feed, post detail, new post, and pricing; supports direct navigation/refresh on non-root routes via a 404 redirect shim that stores the original path in sessionStorage and restores it on app load, with ICP asset canister configuration for routing/caching.",
-      "reqIds": [
-        "REQ-1"
-      ],
+      "description": "Displays a single post with metadata and a manuscript-framed image; shows user-friendly states for not-found and private access-denied errors; opens a zoom viewer on image click; updates SEO based on content.",
+      "reqIds": [],
       "version": 1
     },
     {
       "id": "IF-24",
-      "title": "PWA manifest and offline-capable service worker",
+      "title": "Image zoom and pan viewer",
       "synonyms": [
-        "web manifest",
-        "service worker caching",
-        "offline shell"
+        "ImageZoomViewer",
+        "zoom dialog"
       ],
-      "description": "Provides a web manifest (standalone display, icons, theme colors) and a custom service worker that precaches core assets, performs runtime caching, and falls back to cached index.html (or an inline offline HTML) for navigation when offline.",
+      "description": "Full-screen dialog viewer for post images with zoom in/out, reset, wheel zooming, and drag-to-pan behavior when zoomed in.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-25",
+      "title": "New post page with publish workflow",
+      "synonyms": [
+        "NewPostPage",
+        "compose",
+        "publish flow"
+      ],
+      "description": "Authenticated-only post creation UI with form validation, writing type selection, visibility selection, image selection + preview, required crop step, upload progress indicator, and submission to backend create-post API.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-26",
+      "title": "Interactive client-side image cropping",
+      "synonyms": [
+        "ImageCropper",
+        "crop before upload"
+      ],
+      "description": "Client-side crop UI with a draggable crop area, reset, apply/cancel, and conversion of the selected region into a Blob via canvas before upload.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-27",
+      "title": "ExternalBlob conversion utility with progress callbacks",
+      "synonyms": [
+        "convertImageToBlob",
+        "upload blob conversion"
+      ],
+      "description": "Converts a `File` or `Blob` into an `ExternalBlob` from bytes using `FileReader`; optionally wires a progress callback for upload/read progress.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-28",
+      "title": "Writing type and visibility badges",
+      "synonyms": [
+        "WritingTypeBadge",
+        "PostVisibilityBadge"
+      ],
+      "description": "UI badges for poetry vs prose and for private/link-only visibility (public posts omit the visibility badge). Visibility badge is only shown to the post author in feed/detail views.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-29",
+      "title": "Global layout, theming, and toasts",
+      "synonyms": [
+        "AppLayout",
+        "AppHeader",
+        "ThemeProvider",
+        "sonner toasts"
+      ],
+      "description": "App shell with sticky header, footer, consistent content container, light/dark theming via `next-themes`, and toast notifications via `sonner`.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-30",
+      "title": "Offline notice banner",
+      "synonyms": [
+        "OfflineNotice",
+        "network status UI"
+      ],
+      "description": "Displays a fixed in-app alert when the browser is offline by tracking `navigator.onLine` and listening to `online/offline` events.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-31",
+      "title": "PWA install UX with fallback instructions",
+      "synonyms": [
+        "InstallAppButton",
+        "beforeinstallprompt handling"
+      ],
+      "description": "Shows an Install App button when not already installed; uses `beforeinstallprompt` when available and otherwise displays platform-specific manual installation instructions in a dialog.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-32",
+      "title": "Service worker caching, offline fallback, and registration",
+      "synonyms": [
+        "sw.js",
+        "registerServiceWorker",
+        "runtime cache"
+      ],
+      "description": "Custom service worker precaches core static assets, uses runtime caching for navigations/assets, and provides a basic offline HTML response; registration includes update detection and periodic update checks.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-33",
+      "title": "SPA routing with deep-link refresh support on ICP asset hosting",
+      "synonyms": [
+        "TanStack Router",
+        "404.html redirect shim",
+        ".ic-assets.json5"
+      ],
+      "description": "Routes for feed, post detail, new post, and pricing; supports direct navigation/refresh on non-root routes using a `404.html` redirect that stores the intended path in `sessionStorage`, restored on app load; `.ic-assets.json5` config sets caching/content-type rules.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-34",
+      "title": "SEO metadata (baseline + route-aware updates)",
+      "synonyms": [
+        "index.html meta tags",
+        "setSEO",
+        "dynamic title/description"
+      ],
+      "description": "Provides default document title/description and social preview metadata (OpenGraph + Twitter) in `index.html`, and updates title/meta description at runtime per route using a `setSEO` utility.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-35",
+      "title": "Pricing page with Stripe Checkout redirect and return handling",
+      "synonyms": [
+        "PricingPage",
+        "createCheckoutSession flow",
+        "verifyCheckoutSession"
+      ],
+      "description": "Pricing UI for monthly/yearly plans that, when authenticated, creates a Stripe Checkout session via the backend, redirects to Stripe Checkout, and handles success/cancel return URL parameters by verifying the completed session and showing toast feedback.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-36",
+      "title": "Deployment and configuration documentation (including Stripe setup)",
+      "synonyms": [
+        "PUBLISHING.md",
+        "deployment guide",
+        "Stripe configuration docs"
+      ],
+      "description": "Documentation covering Internet Computer deployment, SPA routing considerations, PWA installation/offline behavior, troubleshooting, and Stripe subscription/checkout setup requirements.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-the-pricing-page-post-checkout-confirmation-ux-to-make-verification-explicit-resilient-and-user-friendly-on-redirect-back-to-pricing-success-true-session-id-show-a-clear-in-page-verifying-your-subscription-state-disable-plan-buttons-while-verifying-automatically-verify-the-session-via-useverifycheckoutsession-if-verification-fails-with-a-transient-error-provide-a-visible-try-again-action-and-keep-the-session-id-available-until-verification-succeeds-or-the-user-dismisses-the-flow-ensure-url-parameters-used-for-return-handling-are-cleaned-up-appropriately-to-avoid-repeated-toasts-verification-on-refresh-including-handling-canceled-true",
+      "title": "Improve the Pricing page post-checkout confirmation UX to make verification explicit, resilient, and user-friendly.\n\n- On redirect back to `/pricing?success=true&session_id=...`, show a clear in-page “Verifying your subscription…” state (disable plan buttons while verifying).\n- Automatically verify the session via `useVerifyCheckoutSession`.\n- If verification fails with a transient error, provide a visible “Try again” action and keep the `session_id` available until verification succeeds or the user dismisses the flow.\n- Ensure URL parameters used for return handling are cleaned up appropriately to avoid repeated toasts/verification on refresh (including handling `canceled=true`).",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "IF-25",
-      "title": "Offline notice banner",
-      "synonyms": [
-        "OfflineNotice",
-        "network status UI"
-      ],
-      "description": "Displays an in-app alert when the browser is offline by listening to online/offline events and tracking navigator.onLine.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-26",
-      "title": "In-app PWA install button with fallback instructions",
-      "synonyms": [
-        "InstallAppButton",
-        "beforeinstallprompt handling"
-      ],
-      "description": "Shows an Install App button when the app is not already installed; uses beforeinstallprompt when available, otherwise presents platform-specific manual installation instructions in a dialog.",
+      "id": "feature-reflect-verified-subscription-status-in-the-pricing-ui-after-successful-verification-refresh-and-display-the-user-s-current-subscription-status-using-the-existing-react-query-subscription-status-query-if-the-user-is-subscribed-indicate-that-in-the-pricing-page-and-prevent-initiating-a-new-checkout-session-from-the-plan-buttons-or-clearly-label-the-buttons-as-unavailable",
+      "title": "Reflect verified subscription status in the Pricing UI.\n\n- After successful verification, refresh and display the user’s current subscription status using the existing React Query subscription status query.\n- If the user is subscribed, indicate that in the Pricing page and prevent initiating a new checkout session from the plan buttons (or clearly label the buttons as unavailable).",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
-    },
-    {
-      "id": "IF-27",
-      "title": "Pricing page UI",
-      "synonyms": [
-        "PricingPage",
-        "plans screen"
-      ],
-      "description": "Static pricing page presenting Monthly (₹100) and Yearly (₹1,100) plans with feature lists and subscribe CTA buttons.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-28",
-      "title": "Blob-storage maintenance and cycle refill endpoints (backend)",
-      "synonyms": [
-        "MixinStorage",
-        "dead blob pruning",
-        "cashier refill"
-      ],
-      "description": "Backend exposes maintenance methods to update authorized gateway principals, list dead blobs for deletion, confirm blob pruning (and trigger GC), check whether a storage blob is live, and allow the cashier canister to refill cycles.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-29",
-      "title": "Publishing and PWA installation documentation",
-      "synonyms": [
-        "PUBLISHING.md",
-        "deployment guide"
-      ],
-      "description": "Documentation describing Internet Computer deployment steps, ICP asset canister SPA routing considerations, PWA installation instructions by platform, offline behavior, and troubleshooting.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "feature-regenerate-the-project-build-and-refresh-the-live-preview-so-the-user-can-access-an-updated-preview-link-button-in-the-interface-without-changing-application-functionality",
-      "title": "Regenerate the project build and refresh the live preview so the user can access an updated Preview link/button in the interface without changing application functionality.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Tighten up the Stripe subscription/checkout confirmation step (improve verification and post-checkout success handling).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Update the backend subscription logic so that subscription status is based on successful Stripe checkout verification rather than the caller’s authenticated role.\n\n- Track per-principal subscription activation in backend state (e.g., a map keyed by Principal).\n- When `getStripeSessionStatus(sessionId)` is called and the session is verified as successfully completed/paid, mark the owning principal as subscribed (idempotently).\n- Update `isUserSubscribed()` to return the stored Stripe-backed subscription state for the caller (defaulting to false when no active subscription is recorded).\n- Preserve existing authorization checks so only the session owner (or an admin) can verify a session.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    }
+  ],
   "architectural_notes": [
-    "Internet Computer backend canister written in Motoko; cross-cutting backend capabilities are composed via mixins (authorization and blob-storage maintenance).",
-    "Role-based access control is stateful in-canister (Principal -> role map) and initialized via a caller-provided secret compared against an environment variable token.",
-    "Frontend is a SPA using TanStack Router for routing and TanStack React Query for data fetching, caching, and mutation workflows.",
-    "Authentication is implemented with @dfinity/auth-client (Internet Identity) wrapped in a React context/provider; identity changes recreate the backend actor.",
-    "Client-to-canister media upload uses an ExternalBlob abstraction created from bytes in the browser and passed to Motoko APIs.",
-    "PWA support is implemented with a web manifest, a custom service worker (precache + runtime cache), and UI affordances (offline notice, install button + instructions).",
-    "ICP asset canister SPA deep-link support is implemented via a 404.html redirect shim plus a .ic-assets.json5 configuration for caching/content-type rules and raw access.",
-    "UI layer uses Tailwind CSS with shadcn/ui component primitives and next-themes for light/dark mode styling."
+    "Internet Computer backend canister implemented in Motoko with cross-cutting functionality composed via `include` mixins (authorization + blob-storage).",
+    "Role-based access control (admin/user/guest) is stored in-canister (Principal -> role map) and bootstrapped via a one-time admin assignment using a URL-provided secret compared against an environment variable token.",
+    "Frontend uses TanStack Router for SPA routing and TanStack React Query for data fetching/caching/mutations; backend calls are made through an identity-scoped canister actor.",
+    "Internet Identity authentication is wrapped in a React context/provider using `@dfinity/auth-client`, restoring persisted sessions on load.",
+    "Image/media uploads are modeled as `ExternalBlob` passed from the browser to the canister; the frontend converts File/Blob bytes to `ExternalBlob` and can attach progress callbacks.",
+    "PWA support is implemented via a web manifest, custom service worker (precache + runtime caching), install UI, and an offline notice banner.",
+    "ICP asset-canister SPA deep-link support is implemented via `public/404.html` redirect + `.ic-assets.json5` cache/content-type rules.",
+    "Stripe integration uses IC HTTPS outcalls (management canister `http_request`) with a transform function that strips headers; a Stripe wrapper module builds URL-encoded Checkout requests and parses session status.",
+    "UI stack uses Tailwind CSS + shadcn/ui primitives and `next-themes` for light/dark mode, with custom “paper texture” and “manuscript frame” styling utilities.",
+    "SEO is handled via baseline HTML meta tags plus runtime per-route title/description updates through a small `setSEO` utility."
   ],
   "known_issues": [
-    "Post ordering is not truly chronological: the backend sorts getAllPosts() by title, while the feed reverses the array expecting newest-first, resulting in reverse-alphabetical order instead of by creation time.",
-    "getPostsByType() does not sort results, so ordering may be unstable and inconsistent with the feed.",
-    "Link-only posts rely on security-by-obscurity of the post ID; there is no additional token/nonce-based access control beyond knowing the URL.",
-    "Access control initialization traps if the canister env var CAFFEINE_ADMIN_TOKEN is not set, which can break authenticated flows in misconfigured deployments.",
-    "Blob-storage cashier principal env var appears misspelled as CAFFFEINE_STORAGE_CASHIER_PRINCIPAL (triple 'F'); deployments using a different spelling will trap at runtime.",
-    "Service worker precache does not include the built JS/CSS bundles; a first-time offline load may fail unless those assets were previously fetched and cached at runtime.",
+    "Stripe checkout session ownership tracking appears incorrect: backend `createCheckoutSession` stores the full Stripe JSON response as the `sessionOwners` map key, but later `getStripeSessionStatus(sessionId)` expects a real session id string (likely causing \"Session not found\" on verification).",
+    "`Stripe.buildCheckoutSessionBody` uses `shipping_address_collection[allowed_countries][0]` for every country, overwriting entries instead of indexing each allowed country.",
+    "`isUserSubscribed()` currently returns whether the caller has the `#user` role (i.e., is registered/authenticated), not a real Stripe-backed subscription status.",
+    "Backend state (roles, profiles, posts, Stripe configuration, session ownership) is kept in in-memory `Map`s with no stable-memory persistence shown; data may be lost across canister upgrades.",
+    "`getAllPosts()`/`getPostsByType()` do not implement explicit chronological sorting; the frontend reverses `getAllPosts()` output, which may not reflect true creation order.",
+    "Service worker precache omits built JS/CSS bundles; first-time offline loads may fail unless those assets were previously fetched and cached at runtime.",
     "Service worker registration checks for updates every minute, which may be unnecessarily aggressive for bandwidth/battery.",
-    "Backend state (profiles, posts, roles) is stored in in-memory Maps with no stable-memory upgrade strategy shown; data may be lost across canister upgrades.",
-    "There are two different global CSS files (frontend/index.css and frontend/src/index.css); if both are used or confused in tooling, theme tokens/styles can diverge unexpectedly.",
-    "Pricing page contains subscribe CTAs but no actual subscription/payment/entitlement enforcement is implemented in the provided code."
+    "Link-only posts are accessible to anyone with the post id/URL (no additional secret/token beyond the id).",
+    "Authenticated initialization traps if `CAFFEINE_ADMIN_TOKEN` is not set in the canister environment, breaking authenticated flows in misconfigured deployments.",
+    "Blob-storage cashier principal environment variable appears misspelled as `CAFFFEINE_STORAGE_CASHIER_PRINCIPAL` (triple 'F'); mismatched deployments will trap at runtime."
   ],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "gameProjectType": "none",
   "projectName": "Handwritten Poetry & Prose",
   "clarification_mode": "instant",

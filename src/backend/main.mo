@@ -1,6 +1,4 @@
 import Array "mo:core/Array";
-import Iter "mo:core/Iter";
-import Order "mo:core/Order";
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
@@ -9,7 +7,11 @@ import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+import Stripe "stripe/stripe";
+import OutCall "http-outcalls/outcall";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   // Initialize the access control system
   let accessControlState = AccessControl.initState();
@@ -67,13 +69,6 @@ actor {
     visibility : PostVisibility;
   };
 
-  // Comparison for Sorting
-  module WritingPost {
-    public func compare(p1 : WritingPost, p2 : WritingPost) : Order.Order {
-      Text.compare(p1.title, p2.title);
-    };
-  };
-
   // Posts storage
   let posts = Map.empty<Text, WritingPost>();
 
@@ -110,7 +105,7 @@ actor {
   public query ({ caller }) func getAllPosts() : async [WritingPost] {
     posts.values().toArray().filter(
       func(p) { p.visibility == #publicPost }
-    ).sort();
+    );
   };
 
   // Get Post by id - public, but respects visibility
@@ -131,5 +126,92 @@ actor {
     posts.values().toArray().filter(
       func(p) { p.writingType == writingType and p.visibility == #publicPost }
     );
+  };
+
+  // SUBSCRIPTION MANAGEMENT (using Stripe status, not auth role)
+  //
+  // Stripe integration
+  var configuration : ?Stripe.StripeConfiguration = null;
+
+  // Track session ownership for authorization
+  let sessionOwners = Map.empty<Text, Principal>();
+
+  // Store subscription status explicitly
+  let subscriptions = Map.empty<Principal, Bool>();
+
+  public query func isStripeConfigured() : async Bool {
+    configuration != null;
+  };
+
+  public shared ({ caller }) func setStripeConfiguration(config : Stripe.StripeConfiguration) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    configuration := ?config;
+  };
+
+  func getStripeConfiguration() : Stripe.StripeConfiguration {
+    switch (configuration) {
+      case (null) { Runtime.trap("Stripe needs to be first configured") };
+      case (?value) { value };
+    };
+  };
+
+  public shared ({ caller }) func getStripeSessionStatus(sessionId : Text) : async Stripe.StripeSessionStatus {
+    // Verify caller owns this session or is admin
+    switch (sessionOwners.get(sessionId)) {
+      case (null) { Runtime.trap("Session not found") };
+      case (?owner) {
+        if (caller != owner and not AccessControl.isAdmin(accessControlState, caller)) {
+          Runtime.trap("Unauthorized: Can only check your own session status");
+        };
+      };
+    };
+
+    let status = await Stripe.getSessionStatus(getStripeConfiguration(), sessionId, transform);
+
+    switch (status) {
+      case (#completed { userPrincipal }) {
+        // Mark the principal as subscribed
+        switch (userPrincipal) {
+          case (?principalStr) {
+            // Convert Text to Principal (if valid)
+            func fromText(_text : Text) : Principal {
+              fromText(_text);
+            };
+            let principal = fromText(principalStr);
+            subscriptions.add(principal, true);
+          };
+          case (null) {};
+        };
+      };
+      case (_) {};
+    };
+    status;
+  };
+
+  public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
+    // Only authenticated users can create checkout sessions
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can create checkout sessions");
+    };
+
+    let sessionId = await Stripe.createCheckoutSession(getStripeConfiguration(), caller, items, successUrl, cancelUrl, transform);
+
+    // Track session ownership for authorization
+    sessionOwners.add(sessionId, caller);
+
+    sessionId;
+  };
+
+  public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
+    OutCall.transform(input);
+  };
+
+  public query ({ caller }) func isUserSubscribed() : async Bool {
+    switch (subscriptions.get(caller)) {
+      case (?true) { true };
+      case (_) { false };
+    };
   };
 };

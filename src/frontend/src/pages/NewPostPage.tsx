@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useCreatePost } from '../hooks/useQueries';
@@ -14,6 +14,7 @@ import { WritingType, PostVisibility } from '../backend';
 import { toast } from 'sonner';
 import { convertImageToBlob } from '../lib/imageUpload';
 import ImageCropper from '../components/posts/ImageCropper';
+import { setSEO } from '../lib/seo';
 
 export default function NewPostPage() {
   const navigate = useNavigate();
@@ -29,6 +30,13 @@ export default function NewPostPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showCropper, setShowCropper] = useState(false);
   const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
+
+  useEffect(() => {
+    setSEO(
+      'Share Your Writing | Handwritten Poetry & Prose',
+      'Create and share your handwritten poetry or prose with the world. Upload your handwritten work and showcase it in beautiful manuscript-style presentation.'
+    );
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

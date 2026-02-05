@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-regenerate-the-project-build-and-refresh-the-live-preview-so-the-user-can-access-an-updated-preview-link-button-in-the-interface-without-changing-application-functionality",
-      "featureTitle": "Regenerate the project build and refresh the live preview so the user can access an updated Preview link/button in the interface without changing application functionality.",
+      "featureId": "feature-improve-the-pricing-page-post-checkout-confirmation-ux-to-make-verification-explicit-resilient-and-user-friendly-on-redirect-back-to-pricing-success-true-session-id-show-a-clear-in-page-verifying-your-subscription-state-disable-plan-buttons-while-verifying-automatically-verify-the-session-via-useverifycheckoutsession-if-verification-fails-with-a-transient-error-provide-a-visible-try-again-action-and-keep-the-session-id-available-until-verification-succeeds-or-the-user-dismisses-the-flow-ensure-url-parameters-used-for-return-handling-are-cleaned-up-appropriately-to-avoid-repeated-toasts-verification-on-refresh-including-handling-canceled-true",
+      "featureTitle": "Improve the Pricing page post-checkout confirmation UX to make verification explicit, resilient, and user-friendly.\n\n- On redirect back to `/pricing?success=true&session_id=...`, show a clear in-page “Verifying your subscription…” state (disable plan buttons while verifying).\n- Automatically verify the session via `useVerifyCheckoutSession`.\n- If verification fails with a transient error, provide a visible “Try again” action and keep the `session_id` available until verification succeeds or the user dismisses the flow.\n- Ensure URL parameters used for return handling are cleaned up appropriately to avoid repeated toasts/verification on refresh (including handling `canceled=true`).",
       "files": [
-        "frontend/PUBLISHING.md"
+        "frontend/src/pages/PricingPage.tsx",
+        "frontend/src/utils/urlParams.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -14,10 +15,35 @@
         "shadcn-ui@1.0.0",
         "build-template-react@1.0.0",
         "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "stripe@3.0.0"
       ],
       "testIds": [
-        "REQ-4"
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-reflect-verified-subscription-status-in-the-pricing-ui-after-successful-verification-refresh-and-display-the-user-s-current-subscription-status-using-the-existing-react-query-subscription-status-query-if-the-user-is-subscribed-indicate-that-in-the-pricing-page-and-prevent-initiating-a-new-checkout-session-from-the-plan-buttons-or-clearly-label-the-buttons-as-unavailable",
+      "featureTitle": "Reflect verified subscription status in the Pricing UI.\n\n- After successful verification, refresh and display the user’s current subscription status using the existing React Query subscription status query.\n- If the user is subscribed, indicate that in the Pricing page and prevent initiating a new checkout session from the plan buttons (or clearly label the buttons as unavailable).",
+      "files": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/PricingPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "stripe@3.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

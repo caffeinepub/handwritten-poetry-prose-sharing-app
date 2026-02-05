@@ -1,93 +1,68 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-05T09:57:04.956Z",
-  "summary": "REQ-4 was to regenerate/refresh the preview build without changing application functionality or backend state. The diff shows substantial backend and frontend functional changes (e.g., new post visibility model and authorization gates) plus documentation/state updates, and it does not show any explicit change that updates a Preview link/button to a newly generated preview build.",
+  "generatedAt": "2026-02-05T10:57:57.977Z",
+  "summary": "Diff implements parts of the Stripe subscription tightening/UX work, but the provided diff summary is truncated for key areas (notably the backend Stripe section and the Pricing page render), so several requirements cannot be conclusively verified. The diff also includes substantial unrelated features (post visibility/privacy changes, routing/404 redirect behavior, etc.) that were not requested.",
   "missing_requirements": [
     {
-      "id": "REQ-4",
-      "requirement": "Regenerate the project build and refresh the live preview so the user can access an updated Preview link/button in the interface without changing application functionality.",
-      "reason": "The diff contains multiple functional code changes (not a no-op rebuild), and it does not provide evidence that the Preview action/link was updated to point to a newly generated preview build.",
+      "id": "REQ-1",
+      "requirement": "Backend: ensure getStripeSessionStatus(sessionId) marks the owning principal as subscribed upon successful/paid verification; isUserSubscribed() returns Stripe-backed stored state; and verification remains restricted to session owner (or admin), with idempotent behavior.",
+      "reason": "The backend file is truncated right as the subscription section begins, so the diff summary does not provide evidence that the per-principal subscription map is updated on successful session verification, that isUserSubscribed() reads from that state, or that owner/admin authorization and idempotency are preserved.",
       "evidence": [
-        "backend/main.mo",
-        "frontend-file-summaries.txt",
-        "frontend/PUBLISHING.md",
-        "project_state.json"
+        "backend/main.mo (truncated at \"// SUBSCRIPTION MANAGEMENT\")",
+        "backend/migration.mo"
       ]
     },
     {
-      "id": "REQ-4",
-      "requirement": "A new build is produced successfully with no code changes required.",
-      "reason": "Code was modified (backend logic/types and various frontend-described behaviors), contradicting the acceptance criterion that no code changes are required for the regeneration.",
+      "id": "REQ-2",
+      "requirement": "Frontend: Pricing page shows an explicit in-page “Verifying your subscription…” state (with plan buttons disabled while verifying), retries on transient verification error while keeping session_id available, and cleans up success/canceled URL params without full reload.",
+      "reason": "While PricingPage.tsx shows logic for reading success/canceled/session_id, persisting session_id for retry, clearing URL params, and triggering verification, the diff is truncated before the UI render that would prove an in-page verifying indicator and that plan buttons are disabled during verifying/error states.",
       "evidence": [
-        "backend/main.mo",
-        "frontend-file-summaries.txt",
-        "project_state.json"
+        "frontend/src/pages/PricingPage.tsx (truncated)"
       ]
     },
     {
-      "id": "REQ-4",
-      "requirement": "The Preview action/link in the interface points to the newly generated preview build.",
-      "reason": "No evidence in the provided diff summary indicates any update to a Preview link/button target (e.g., config, build metadata, or UI element tied to preview).",
+      "id": "REQ-3",
+      "requirement": "Frontend: After successful verification, invalidate/refetch the existing subscription status query and, when subscribed, prevent starting a new checkout session from plan buttons (or clearly mark them unavailable).",
+      "reason": "The diff summary does not show the post-verification refetch/invalidation wiring in PricingPage (it only shows a toast on success before truncation), nor the plan button disabled/unavailable behavior when subscribed; the hook file is also truncated before the verify hook implementation details.",
       "evidence": [
-        "frontend-file-summaries.txt",
-        "frontend/PUBLISHING.md",
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "No backend state migrations are performed as part of this regeneration.",
-      "reason": "Backend canister code changes are present, including new/changed data types and storage behavior; the diff does not show a guarantee of ‘no migrations’ and appears to alter backend state handling rather than only rebuilding.",
-      "evidence": [
-        "backend/main.mo"
+        "frontend/src/pages/PricingPage.tsx (truncated)",
+        "frontend/src/hooks/useQueries.ts (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Introduced/expanded post visibility domain model (#publicPost/#linkOnly/#privatePost) and enforced visibility-based access restrictions in backend queries.",
-      "reason": "REQ-4 requested only a rebuild/preview refresh with no functionality changes; adding/changing visibility behavior is new functionality.",
+      "description": "Added/changed writing post visibility model (public/link-only/private) with new access control rules for fetching posts and filtering only public posts in list endpoints, plus updated createPost signature to include visibility.",
+      "reason": "Not requested by the BuildRequest (which is exclusively about Stripe checkout verification/subscription activation and Pricing page UX/status).",
       "evidence": [
-        "backend/main.mo",
-        "frontend-file-summaries.txt (mentions visibility badges, private access denial handling, visibility selection in NewPostPage)"
+        "backend/main.mo"
       ]
     },
     {
-      "description": "Changed public feed behavior to return only public posts and added/changed authorization checks around profile and post access.",
-      "reason": "REQ-4 explicitly disallows application functionality changes and backend/auth changes as part of the preview regeneration.",
+      "description": "Added a canister migration module introducing an upgrade migration that adds a subscriptions map field.",
+      "reason": "The BuildRequest did not ask for upgrade migration work (and explicitly lists persistence across upgrades as a non-goal); this may be pragmatic for schema evolution but is not requested functionality.",
       "evidence": [
-        "backend/main.mo",
-        "frontend-file-summaries.txt"
+        "backend/migration.mo",
+        "backend/main.mo"
       ]
     },
     {
-      "description": "Added/updated extensive frontend behavior and UI elements (routing handling, feed layout with featured tiles, cropping flow, zoom viewer, visibility badges, pricing route, offline notice, PWA install button).",
-      "reason": "REQ-4 is a non-feature request; these constitute new features/UI changes beyond regenerating a preview build.",
+      "description": "Frontend routing/deep-link refresh/404 redirect recovery handling (sessionStorage 'redirectPath' etc.).",
+      "reason": "Not part of the Stripe checkout verification/subscription activation requirements.",
       "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "Added documentation content describing preview regeneration and deployment/PWA verification steps.",
-      "reason": "REQ-4 did not request documentation updates; this is extra scope beyond regenerating the preview build.",
-      "evidence": [
-        "frontend/PUBLISHING.md"
-      ]
-    },
-    {
-      "description": "Updated project_state.json summary/features to reflect expanded functionality (visibility, zoom/pan, cropping, offline caching, SPA deep-link support).",
-      "reason": "REQ-4 requested a rebuild without functionality change; updating project state to new capabilities suggests unrequested scope.",
-      "evidence": [
-        "project_state.json"
+        "frontend-file-summaries.txt (frontend/src/App.tsx described as modified)"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.55,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/PUBLISHING.md",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/PricingPage.tsx",
+    "frontend/src/utils/urlParams.ts",
     "project_state.json"
   ]
 }

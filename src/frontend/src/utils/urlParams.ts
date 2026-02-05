@@ -33,6 +33,71 @@ export function getUrlParameter(paramName: string): string | null {
 }
 
 /**
+ * Removes a specific parameter from the URL without reloading the page
+ * Works with both regular query strings and hash-based routing
+ *
+ * @param paramName - The parameter to remove from the URL
+ */
+export function clearUrlParameter(paramName: string): void {
+    if (!window.history.replaceState) {
+        return;
+    }
+
+    // Check if we have hash-based routing
+    const hash = window.location.hash;
+    if (hash && hash.includes('?')) {
+        clearParamFromHash(paramName);
+        return;
+    }
+
+    // Handle regular query string
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has(paramName)) {
+        return;
+    }
+
+    urlParams.delete(paramName);
+    const newQueryString = urlParams.toString();
+    const newUrl = window.location.pathname + (newQueryString ? '?' + newQueryString : '') + window.location.hash;
+    window.history.replaceState(null, '', newUrl);
+}
+
+/**
+ * Removes multiple parameters from the URL without reloading the page
+ *
+ * @param paramNames - Array of parameter names to remove
+ */
+export function clearUrlParameters(paramNames: string[]): void {
+    if (!window.history.replaceState || paramNames.length === 0) {
+        return;
+    }
+
+    // Check if we have hash-based routing
+    const hash = window.location.hash;
+    if (hash && hash.includes('?')) {
+        paramNames.forEach(param => clearParamFromHash(param));
+        return;
+    }
+
+    // Handle regular query string
+    const urlParams = new URLSearchParams(window.location.search);
+    let hasChanges = false;
+
+    paramNames.forEach(paramName => {
+        if (urlParams.has(paramName)) {
+            urlParams.delete(paramName);
+            hasChanges = true;
+        }
+    });
+
+    if (hasChanges) {
+        const newQueryString = urlParams.toString();
+        const newUrl = window.location.pathname + (newQueryString ? '?' + newQueryString : '') + window.location.hash;
+        window.history.replaceState(null, '', newUrl);
+    }
+}
+
+/**
  * Stores a parameter in sessionStorage for persistence across navigation
  * Useful for maintaining state like admin tokens throughout the session
  *

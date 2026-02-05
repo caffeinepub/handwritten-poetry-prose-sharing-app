@@ -1,14 +1,23 @@
+import { useEffect } from 'react';
 import { useGetAllPosts } from '../hooks/useQueries';
 import PostCard from '../components/posts/PostCard';
 import { Loader2, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { setSEO } from '../lib/seo';
 
 export default function FeedPage() {
   const { data: posts, isLoading } = useGetAllPosts();
   const navigate = useNavigate();
   const { identity } = useInternetIdentity();
+
+  useEffect(() => {
+    setSEO(
+      'Handwritten Poetry & Prose - Share Your Writing with the World',
+      'Discover and share handwritten poetry and prose. A beautiful collection of handwritten words from writers around the world.'
+    );
+  }, []);
 
   const handleNewPost = () => {
     if (!identity) {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useGetPost } from '../hooks/useQueries';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -9,6 +9,7 @@ import PostVisibilityBadge from '../components/posts/PostVisibilityBadge';
 import ImageZoomViewer from '../components/posts/ImageZoomViewer';
 import { formatAuthor, formatDate } from '../lib/postPresentation';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { setSEO } from '../lib/seo';
 
 export default function PostDetailPage() {
   const { postId } = useParams({ from: '/post/$postId' });
@@ -16,6 +17,21 @@ export default function PostDetailPage() {
   const { identity } = useInternetIdentity();
   const { data: post, isLoading, error } = useGetPost(postId);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
+
+  useEffect(() => {
+    if (post) {
+      const postType = post.writingType === 'poetry' ? 'Poetry' : 'Prose';
+      setSEO(
+        `${post.title} - ${postType} | Handwritten Poetry & Prose`,
+        post.message || `Read "${post.title}" - handwritten ${postType.toLowerCase()} shared on our platform.`
+      );
+    } else if (!isLoading) {
+      setSEO(
+        'Post Not Found | Handwritten Poetry & Prose',
+        'The post you are looking for could not be found.'
+      );
+    }
+  }, [post, isLoading]);
 
   if (isLoading) {
     return (
